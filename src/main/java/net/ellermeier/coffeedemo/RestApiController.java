@@ -44,9 +44,22 @@ public class RestApiController {
 
     }
 
-    @PutMapping("/{id}")
-    ResponseEntity<Coffee> putCoffee(@PathVariable String id, @RequestBody Coffee putCoffee) {
+    @PatchMapping
+    ResponseEntity<Coffee> patchCoffee(@RequestBody Coffee patchCoffee) {
+        String id = patchCoffee.getId();
+        for(Coffee c: coffees) {
+            if(c.getId().equals(id)) {
+                coffees.set(coffees.indexOf(c), patchCoffee);
+                return new ResponseEntity<>(patchCoffee, HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(patchCoffee, HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping
+    ResponseEntity<Coffee> putCoffee(@RequestBody Coffee putCoffee) {
         int coffeeIndex = -1;
+        String id = putCoffee.getId();
 
         for (Coffee c: coffees) {
             if(c.getId().equals(id)) {
