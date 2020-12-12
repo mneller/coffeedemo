@@ -1,5 +1,6 @@
 package net.ellermeier.coffeedemo;
 
+import org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,70 +12,51 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/coffees")
 public class RestApiController {
-    private List<Coffee> coffees = new ArrayList<>();
+    private final CoffeeRepository coffeeRepository;
 
-    public RestApiController() {
-        coffees.addAll(List.of(
-                Coffee.of("Dark Coffee"),
-                Coffee.of("Very Dark Coffee"),
-                Coffee.of("Light Coffee")
-        ));
+    public RestApiController(CoffeeRepository coffeeRepository) {
+        this.coffeeRepository = coffeeRepository;
     }
 
     // @RequestMapping(value = "/coffees", method = RequestMethod.GET)
     @GetMapping
     Iterable<Coffee> getCoffees() {
-        return this.coffees;
+        return this.coffeeRepository.findAll();
     }
 
     @GetMapping("/{id}")
     Optional<Coffee> getCoffeeById(@PathVariable String id) {
-        for (Coffee c: coffees) {
-            if(c.getId().equals(id)) {
-                return Optional.of(c);
-            }
-        }
-        return Optional.empty();
+        return this.coffeeRepository.findById(id);
     }
 
     @PostMapping
     Coffee addCoffee(@RequestBody Coffee c) {
-        coffees.add(c);
-        return c;
-
+        return coffeeRepository.save(c);
     }
 
     @PatchMapping
     ResponseEntity<Coffee> patchCoffee(@RequestBody Coffee patchCoffee) {
-        String id = patchCoffee.getId();
-        for(Coffee c: coffees) {
-            if(c.getId().equals(id)) {
-                coffees.set(coffees.indexOf(c), patchCoffee);
-                return new ResponseEntity<>(patchCoffee, HttpStatus.OK);
-            }
-        }
-        return new ResponseEntity<>(patchCoffee, HttpStatus.NOT_FOUND);
+        return coffeeRepository.existsById(patchCoffee.getId())
+                ? new ResponseEntity<>(coffeeRepository.save(patchCoffee), HttpStatus.OK)
+                : new ResponseEntity<>(patchCoffee, HttpStatus.NOT_FOUND);
     }
 
     @PutMapping
     ResponseEntity<Coffee> putCoffee(@RequestBody Coffee putCoffee) {
-        int coffeeIndex = -1;
-        String id = putCoffee.getId();
-
-        for (Coffee c: coffees) {
-            if(c.getId().equals(id)) {
-                coffeeIndex = coffees.indexOf(c);
-                coffees.set(coffeeIndex, putCoffee);
-            }
-        }
-        return coffeeIndex == -1 ?
-                new ResponseEntity<>(addCoffee(putCoffee), HttpStatus.CREATED) :
-                new ResponseEntity<>(coffees.get(coffeeIndex), HttpStatus.OK);
+        return coffeeRepository.existsById(putCoffee.getId())
+                ? new ResponseEntity<>(coffeeRepository.save(putCoffee), HttpStatus.OK)
+                : new ResponseEntity<>(coffeeRepository.save(putCoffee), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
-    void deleteCoffee(@PathVariable String id) {
-        coffees.removeIf(c -> c.getId().equals(id));
+    ResponseEntity<String> deleteCoffee(@PathVariable String id) {
+        if(coffeeRepository.existsById(id)) {
+            coffeeRepository.deleteById(id);
+            return new ResponseEntity<>("Record deleted", HttpStatus.OK);
+        }
+        // Sent HTTP 204 based on https://tools.ietf.org/html/rfc7231#section-4.3.5 if there is no action
+        // This seems better to me than just sending HTTP Status 200.
+        return new ResponseEntity<>("No such record", HttpStatus.NO_CONTENT);
     }
 }
 
