@@ -1,12 +1,9 @@
 package net.ellermeier.coffeedemo;
 
-import org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -18,8 +15,7 @@ public class RestApiController {
         this.coffeeRepository = coffeeRepository;
     }
 
-    // @RequestMapping(value = "/coffees", method = RequestMethod.GET)
-    @GetMapping
+     @GetMapping
     Iterable<Coffee> getCoffees() {
         return this.coffeeRepository.findAll();
     }
